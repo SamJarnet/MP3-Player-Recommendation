@@ -9,17 +9,18 @@ class MP3Player:
         self.master = master
         self.master.title("MP3 Player")
         self.master.geometry("1280x720")
+        
 
         self.create_playlist_button = Button(self.master, text="Create Playlist", command=self.create_playlist)
         self.create_playlist_button.place(x=50, y=65)
         self.playlist_label = Label(self.master, text="Playlists")
         self.playlist_label.place(x=118, y=30)
-        self.playlist_folder = Listbox(self.master, selectmode="SINGLE", bg="lightgrey", selectbackground="darkred", width=30, height=28)
+        self.playlist_folder = Listbox(self.master, selectmode="SINGLE", bg="darkgrey", selectbackground="darkred", width=30, height=28)
         self.playlist_folder.place(x=50, y=132)
         self.input_text = Text(height = 1, width = 22)
         self.input_text.place(x=52, y=100)
 
-        self.playlist = Listbox(self.master, selectmode="SINGLE", bg="lightgrey", selectbackground="darkred", width=90, height=30)
+        self.playlist = Listbox(self.master, selectmode="SINGLE", bg="darkgrey", selectbackground="darkred", width=90, height=30)
         self.playlist.place(x=300, y=100)
         self.playlist_label = Label(self.master, text="No playlist selected")
         self.playlist_label.place(x=300, y=65)
@@ -28,7 +29,7 @@ class MP3Player:
 
         self.recommended_label = Label(self.master, text="Recommended")
         self.recommended_label.place(x=900, y=230)
-        self.recommended = Listbox(self.master, selectmode="SINGLE", bg="lightgrey", selectbackground="darkred", width=55, height=20)
+        self.recommended = Listbox(self.master, selectmode="SINGLE", bg="darkgrey", selectbackground="darkred", width=55, height=20)
         self.recommended.place(x=900, y=260)
         self.generate_button = Button(self.master, text="Generate Songs", command=self.recommend_songs)
         self.generate_button.place(x=1140, y=225)
@@ -65,11 +66,10 @@ class MP3Player:
 
         self.statistics_label = Label(self.master, text="Playlist Statistics")
         self.statistics_label.place(x=900, y=30)
-        self.statistics = Listbox(self.master, bg="lightgrey", width=55, height=9)
+        self.statistics = Listbox(self.master, bg="darkgrey", width=55, height=9)
         self.statistics.place(x=900, y=65)
 
-        self.current_song = StringVar()
-        
+        self.stored_playlists = []
         self.stored_songs = []
 
         self.selected_playlist = 0
@@ -85,10 +85,13 @@ class MP3Player:
 
     def create_playlist(self):
         name = self.input_text.get(1.0, "end-1c")
+        self.stored_playlists.insert(0, name)
         self.playlist_folder.insert(0, name)
         self.stored_songs.insert(0,(list(self.playlist_folder.get(0, -1))))
-        #print(self.stored_songs)
-        
+        print(self.stored_songs)
+        with open('playlists.txt', "w") as file:
+            file.writelines(self.stored_playlists)
+
 
     def select_playlist(self):
         self.selected_playlist = self.playlist_folder.curselection()[0]
@@ -115,20 +118,20 @@ class MP3Player:
 
 
     def play(self):
-        if self.paused == False:
+        if self.paused == False or self.playlist.get(0):
             pygame.mixer.music.load("C:/Users/hamue/Downloads/"+self.playlist.get(self.playlist.curselection()[0]))
             pygame.mixer.music.play()
             self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(self.playlist.get(0)))
-        else:
-            pygame.mixer.music.unpause()
+        # elif self.paused == True:
+        #     self.paused = False
+        #     pygame.mixer.music.unpause()
         pause_image = PhotoImage(file="pause_button.png")
         self.play_button.config(image=pause_image, command=self.pause)
         self.play_button.image = pause_image
 
     def pause(self):
         pygame.mixer.music.pause()
-        self.paused = True
-        self.current_song.set("Paused: " + os.path.basename(self.playlist.get(0)))
+        #self.paused = True
         play_image = PhotoImage(file="play_button.png")
         self.play_button.config(image=play_image, command=self.play)
         self.play_button.image = play_image
