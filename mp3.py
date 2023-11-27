@@ -9,7 +9,6 @@ class MP3Player:
         self.master = master
         self.master.title("MP3 Player")
         self.master.geometry("1280x720")
-        
 
         self.create_playlist_button = Button(self.master, text="Create Playlist", command=self.create_playlist)
         self.create_playlist_button.place(x=100, y=65)
@@ -74,7 +73,7 @@ class MP3Player:
         self.selected_playlist = 0
         self.currently_selected_playlist = ""
         self.song = ""
-        self.playlist_length = 0
+        self.playlist_length = []
 
         self.paused = False
 
@@ -91,6 +90,18 @@ class MP3Player:
             self.playlist_folder.insert(0,  txt[i])
             self.stored_songs.insert(0,(list(self.playlist_folder.get(0, -1))))
 
+
+    def load_songs(self):
+        with open("readme.txt", "w") as test:
+            test.write("Ruben is the biggest retard")
+
+    # def calculate_playlist_length(self):
+    #     for i in range(0, len(self.stored_playlists)):
+    #         if len(self.stored_songs) > 0:
+    #             for j in range(0, len(self.stored_songs)):
+    #                 print(self.stored_songs[i])
+
+
     def create_playlist(self):
         name = self.input_text.get(1.0, "end-1c")
         self.stored_playlists.insert(0, name)
@@ -99,6 +110,17 @@ class MP3Player:
         with open("playlists.txt", "w") as file:
             for line in self.stored_playlists:
                 file.write("".join(line) + "\n")
+        
+
+
+
+        
+
+        #SOUNDRAW
+
+
+
+
 
 
     def select_playlist(self):
@@ -107,6 +129,7 @@ class MP3Player:
         self.playlist.delete(0, "end")
         for i in range(0, len(self.stored_songs[self.selected_playlist])):
             self.playlist.insert(0, self.stored_songs[self.selected_playlist][i])
+        #mp3_player.calculate_playlist_length()
 
 
     def load_song(self):
@@ -117,9 +140,9 @@ class MP3Player:
             length = MP3(file_path).info.length
             self.stored_songs[self.selected_playlist].insert(0, os.path.basename(file_path))
            
-            self.playlist_length += length
+            #self.playlist_length += length
             self.statistics.delete(0, "end")
-            self.statistics.insert(0, str(self.playlist_length)[0:6] + " seconds long")
+            #self.statistics.insert(0, str(self.playlist_length)[0:6] + " seconds long")
 
     def recommend_songs(self):
         self.recommended.insert(0, "randomtext")
@@ -148,13 +171,13 @@ class MP3Player:
     def skip_forward(self):
         pygame.mixer.music.stop()
         self.playlist.selection_clear(0, "end")
-        self.playlist.selection_set((self.playlist.curselection() + 1) % self.playlist.size())
+        self.playlist.selection_set((self.playlist.curselection()[0] + 1) % self.playlist.size())
         self.play()
 
     def skip_backward(self):
         pygame.mixer.music.stop()
         self.playlist.selection_clear(0, "end")
-        self.playlist.selection_set((self.playlist.curselection() - 1) % self.playlist.size())
+        self.playlist.selection_set((self.playlist.curselection()[0] - 1) % self.playlist.size())
         self.play()
 
     def set_volume(self, val):
@@ -165,6 +188,7 @@ class MP3Player:
         if len(self.playlist_folder.curselection()) > 0:
             self.currently_selected_playlist = self.playlist_folder.curselection()[0]
             mp3_player.select_playlist()
+
     def check_selected_song(self):
         if len(self.playlist.curselection()) > 0:
             pass
@@ -174,10 +198,8 @@ if __name__ == "__main__":
     root = Tk()
     mp3_player = MP3Player(root)
     mp3_player.load_playlists()
+    mp3_player.load_songs()
     while True:
         mp3_player.check_selected_playlist()
         root.update_idletasks()
         root.update()
-        
-        
-    
