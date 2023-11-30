@@ -73,7 +73,7 @@ class MP3Player:
         self.selected_playlist = 0
         self.currently_selected_playlist = ""
         self.song = ""
-        self.playlist_length = []
+        self.playlist_length = 0
 
         self.paused = False
 
@@ -89,30 +89,46 @@ class MP3Player:
             self.stored_playlists.insert(0, txt[i])
             self.playlist_folder.insert(0,  txt[i])
             self.stored_songs.insert(0,(list(self.playlist_folder.get(0, -1))))
-            self.playlist_length.append("")
+            
 
 
     def initialise_songs(self):
         for i in range(0, len(self.stored_playlists)):
-            with open(self.stored_playlists[i][0]+".txt", "r") as file:
-                txt=file.readlines()
-                for j in range(0, len(txt)):
-                    self.stored_songs[i].append(txt[j])
+            if os.path.isfile(self.stored_playlists[i][0]+".txt"):
+                with open(self.stored_playlists[i][0]+".txt", "r") as file:
+                    txt=file.readlines()
+                    for j in range(0, len(txt)):
+                        self.stored_songs[i].append(txt[j])
+            else:
+                with open(self.stored_playlists[i][0]+".txt", "w") as file:
+                    file.write("")
+
+  
+    def remove_empty_lines(self):
+        # with open("playlists.txt", "r+") as file:
+        #     for line in file:
+        #         if not line.isspace():
+        #             file.write(line)
+         pass                 
+        # for i in range(0, len(self.stored_playlists)):
+        #     with open(self.stored_playlists[i][0]+".txt", 'r') as r, open(self.stored_playlists[i][0]+".txt", 'w') as o: 
+        #         for line in r: 
+        #             if line.strip() == False: 
+        #                 o.write(line) 
+                            
     
     
     def calculate_playlist_length(self):
-        for i in range (0, len(self.stored_songs)):
-            num = 0
-            for j in range(0, len(self.stored_songs[i])):
-                song = self.stored_songs[i][j]
-                if song[-1] != "3":
-                    song = song[0:-1]
-                audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
-                num+=audio.length
-            self.playlist_length[i] = (str(num))
+        num = 0
+        for i in range (0, len(self.stored_songs[self.currently_selected_playlist])):
+            song = self.stored_songs[self.currently_selected_playlist][i]
+            if song[-1] != "3":
+                song = song[0:-1]
+            audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
+            num+=audio.length
+        self.playlist_length = num
+        
             
-        print(self.playlist_length)
-
 
     def create_playlist(self):
         name = self.input_text.get(1.0, "end-1c")
@@ -142,7 +158,7 @@ class MP3Player:
         for i in range(0, len(self.stored_songs[self.selected_playlist])):
             self.playlist.insert(0, self.stored_songs[self.selected_playlist][i])
         mp3_player.calculate_playlist_length()
-        self.statistics.insert(0, self.playlist_length[self.currently_selected_playlist])
+        self.statistics.insert(0, self.playlist_length)
         self.statistics.delete(1, "end")
 
 
@@ -217,6 +233,7 @@ class MP3Player:
 if __name__ == "__main__":
     root = Tk()
     mp3_player = MP3Player(root)
+    mp3_player.remove_empty_lines()
     mp3_player.initialise_playlists()
     mp3_player.initialise_songs()
     while True:
