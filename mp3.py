@@ -81,7 +81,7 @@ class MP3Player:
         pygame.mixer.init()
 
 
-    def load_playlists(self):
+    def initialise_playlists(self):
         txt = []
         with open("playlists.txt", "r") as file:
             txt = file.readlines()
@@ -89,17 +89,29 @@ class MP3Player:
             self.stored_playlists.insert(0, txt[i])
             self.playlist_folder.insert(0,  txt[i])
             self.stored_songs.insert(0,(list(self.playlist_folder.get(0, -1))))
+            self.playlist_length.append("")
 
 
-    def load_songs(self):
-        with open("readme.txt", "w") as test:
-            test.write("Ruben is the biggest retard")
-
-    # def calculate_playlist_length(self):
-    #     for i in range(0, len(self.stored_playlists)):
-    #         if len(self.stored_songs) > 0:
-    #             for j in range(0, len(self.stored_songs)):
-    #                 print(self.stored_songs[i])
+    def initialise_songs(self):
+        for i in range(0, len(self.stored_playlists)):
+            with open(self.stored_playlists[i][0]+".txt", "r") as file:
+                txt=file.readlines()
+                for j in range(0, len(txt)):
+                    self.stored_songs[i].append(txt[j])
+    
+    
+    def calculate_playlist_length(self):
+        for i in range (0, len(self.stored_songs)):
+            num = 0
+            for j in range(0, len(self.stored_songs[i])):
+                song = self.stored_songs[i][j]
+                if song[-1] != "3":
+                    song = song[0:-1]
+                audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
+                num+=audio.length
+            self.playlist_length[i] = (str(num))
+            
+        print(self.playlist_length)
 
 
     def create_playlist(self):
@@ -129,7 +141,10 @@ class MP3Player:
         self.playlist.delete(0, "end")
         for i in range(0, len(self.stored_songs[self.selected_playlist])):
             self.playlist.insert(0, self.stored_songs[self.selected_playlist][i])
-        #mp3_player.calculate_playlist_length()
+        mp3_player.calculate_playlist_length()
+        self.statistics.insert(0, self.playlist_length[self.currently_selected_playlist])
+        self.statistics.delete(1, "end")
+
 
 
     def load_song(self):
@@ -139,6 +154,10 @@ class MP3Player:
             # pygame.mixer.music.load(file_path)
             length = MP3(file_path).info.length
             self.stored_songs[self.selected_playlist].insert(0, os.path.basename(file_path))
+
+            with open(self.stored_playlists[self.selected_playlist][0]+".txt", "w") as file:
+                for line in self.stored_songs[self.selected_playlist]:
+                    file.write("".join(line) + "\n")
            
             #self.playlist_length += length
             self.statistics.delete(0, "end")
@@ -149,11 +168,15 @@ class MP3Player:
 
 
     def play(self):
-        if self.paused == False or self.song != self.playlist.get(self.playlist.curselection()[0]):
-            pygame.mixer.music.load("C:/Users/hamue/Downloads/"+self.playlist.get(self.playlist.curselection()[0]))
-            self.song = self.playlist.get(self.playlist.curselection()[0])
+        selected = self.playlist.get(self.playlist.curselection()[0])
+        if selected[-1] != "3":
+            selected = selected[0:-1]
+        if self.paused == False or self.song != selected:
+            
+            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+selected)
+            self.song = selected
             pygame.mixer.music.play()
-            self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(self.playlist.get(self.playlist.curselection()[0])))
+            self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(selected))
         elif self.paused == True:
             self.paused = False
             pygame.mixer.music.unpause()
@@ -189,16 +212,13 @@ class MP3Player:
             self.currently_selected_playlist = self.playlist_folder.curselection()[0]
             mp3_player.select_playlist()
 
-    def check_selected_song(self):
-        if len(self.playlist.curselection()) > 0:
-            pass
 
 
 if __name__ == "__main__":
     root = Tk()
     mp3_player = MP3Player(root)
-    mp3_player.load_playlists()
-    mp3_player.load_songs()
+    mp3_player.initialise_playlists()
+    mp3_player.initialise_songs()
     while True:
         mp3_player.check_selected_playlist()
         root.update_idletasks()
