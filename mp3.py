@@ -1,8 +1,9 @@
 import os
 import pygame
-from tkinter import Tk, Frame, Button, Label, Scale, Listbox, StringVar, PhotoImage, Text
+from tkinter import Tk, Frame, Button, Label, Scale, Listbox, StringVar, PhotoImage, Text, Toplevel
 from tkinter import filedialog
 from mutagen.mp3 import MP3
+import random
 
 class MP3Player:
     def __init__(self, master):
@@ -11,7 +12,9 @@ class MP3Player:
         self.master.geometry("1280x720")
 
         self.create_playlist_button = Button(self.master, text="Create Playlist", command=self.create_playlist)
-        self.create_playlist_button.place(x=100, y=65)
+        self.create_playlist_button.place(x=60, y=65)
+        self.delete_playlist_button = Button(self.master, text="Delete Playlist", command=self.delete_playlist)
+        self.delete_playlist_button.place(x=150, y=65)
         self.playlist_label = Label(self.master, text="Playlists")
         self.playlist_label.place(x=118, y=30)
         self.playlist_folder = Listbox(self.master, selectmode="SINGLE", bg="darkgrey", selectbackground="darkred", width=30, height=28)
@@ -34,6 +37,8 @@ class MP3Player:
 
         self.load_button = Button(self.master, text="Load Song", command=self.load_song)
         self.load_button.place(x=300, y=27)
+        self.load_window = Button(self.master, text="Load Window", command=self.openNewWindow)
+        self.load_window.place(x=380, y=27)
 
         self.currently_playing_song = Label(self.master, text="Currently playing: nothing")
         self.currently_playing_song.place(x=150, y=620)
@@ -53,7 +58,6 @@ class MP3Player:
         self.skip_backward_button = Button(self.master, image=skip_backwards_image, command=self.skip_backward)
         self.skip_backward_button.image = skip_backwards_image
         self.skip_backward_button.place(x=480, y=620)
-
 
         self.volume_label = Label(self.master, text="Volume")
         self.volume_label.place(x=1060,y= 590)
@@ -77,8 +81,12 @@ class MP3Player:
 
         self.paused = False
 
+        
+
+
         pygame.init()
         pygame.mixer.init()
+
 
 
     def initialise_playlists(self):
@@ -103,28 +111,26 @@ class MP3Player:
                 with open(self.stored_playlists[i][0]+".txt", "w") as file:
                     file.write("")
 
+
   
     def remove_empty_lines(self):
-        # with open("playlists.txt", "r+") as file:
-        #     for line in file:
-        #         if not line.isspace():
-        #             file.write(line)
-         pass                 
-        # for i in range(0, len(self.stored_playlists)):
-        #     with open(self.stored_playlists[i][0]+".txt", 'r') as r, open(self.stored_playlists[i][0]+".txt", 'w') as o: 
-        #         for line in r: 
-        #             if line.strip() == False: 
-        #                 o.write(line) 
-                            
-    
-    
+        result = ""
+        with open("playlists.txt", "r+") as file:
+            for line in file:
+                if not line.isspace():
+                    result += line
+            file.seek(0)
+            file.write(result)
+
+
+
     def calculate_playlist_length(self):
         num = 0
         for i in range (0, len(self.stored_songs[self.currently_selected_playlist])):
             song = self.stored_songs[self.currently_selected_playlist][i]
             if song[-1] != "3":
                 song = song[0:-1]
-            audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
+            audio = (MP3("C:\\Users\\hamue\\Desktop\\New Folder\\Coding-Project\\Music\\"+song)).info
             num+=audio.length
         self.playlist_length = num
         
@@ -141,13 +147,28 @@ class MP3Player:
         
 
 
+    def delete_playlist(self):
+        self.stored_playlists.pop(self.currently_selected_playlist)
+        with open("playlists.txt", "w") as file:
+            for line in self.stored_playlists:
+                file.write("".join(line) + "\n")
+        mp3_player.remove_empty_lines()
+        self.playlist_folder.delete(0, "end")
 
-        
+
+
+    def openNewWindow(self):
+        new_window = Tk()
+        new_window.geometry("200x200")
+        newWindow = Toplevel(new_window)
+        newWindow.title("New Window")
+        newWindow.geometry("200x200")
+        Label(newWindow, 
+            text ="This is a new window").pack()
+
+
 
         #SOUNDRAW
-
-
-
 
 
 
@@ -158,7 +179,14 @@ class MP3Player:
         for i in range(0, len(self.stored_songs[self.selected_playlist])):
             self.playlist.insert(0, self.stored_songs[self.selected_playlist][i])
         mp3_player.calculate_playlist_length()
-        self.statistics.insert(0, self.playlist_length)
+        minutes = round(self.playlist_length // 60)
+        if minutes >= 60:
+            hours = minutes // 60
+            minutes = minutes % 60
+        else:
+            hours = 0
+        seconds = round(self.playlist_length % 60)
+        self.statistics.insert(0, self.playlist_folder.get(self.selected_playlist) + " is " + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
         self.statistics.delete(1, "end")
 
 
@@ -167,20 +195,17 @@ class MP3Player:
         file_path = filedialog.askopenfilename(defaultextension=".mp3", filetypes=[("MP3 files", "*.mp3")])
         if file_path:
             self.playlist.insert(0, os.path.basename(file_path))
-            # pygame.mixer.music.load(file_path)
-            length = MP3(file_path).info.length
             self.stored_songs[self.selected_playlist].insert(0, os.path.basename(file_path))
 
             with open(self.stored_playlists[self.selected_playlist][0]+".txt", "w") as file:
                 for line in self.stored_songs[self.selected_playlist]:
                     file.write("".join(line) + "\n")
-           
-            #self.playlist_length += length
-            self.statistics.delete(0, "end")
-            #self.statistics.insert(0, str(self.playlist_length)[0:6] + " seconds long")
+
+
 
     def recommend_songs(self):
-        self.recommended.insert(0, "randomtext")
+        self.recommended.insert(0, self.stored_songs[random.randint(0, len(self.stored_songs)-1)])
+
 
 
     def play(self):
@@ -189,16 +214,19 @@ class MP3Player:
             selected = selected[0:-1]
         if self.paused == False or self.song != selected:
             
-            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+selected)
+            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\New Folder\\Coding-Project\\Music\\"+selected)
             self.song = selected
             pygame.mixer.music.play()
             self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(selected))
+            
         elif self.paused == True:
             self.paused = False
             pygame.mixer.music.unpause()
         pause_image = PhotoImage(file="pause_button.png")
         self.play_button.config(image=pause_image, command=self.pause)
         self.play_button.image = pause_image
+
+
 
     def pause(self):
         pygame.mixer.music.pause()
@@ -207,11 +235,15 @@ class MP3Player:
         self.play_button.config(image=play_image, command=self.play)
         self.play_button.image = play_image
 
+
+
     def skip_forward(self):
         pygame.mixer.music.stop()
         self.playlist.selection_clear(0, "end")
         self.playlist.selection_set((self.playlist.curselection()[0] + 1) % self.playlist.size())
         self.play()
+
+
 
     def skip_backward(self):
         pygame.mixer.music.stop()
@@ -219,8 +251,11 @@ class MP3Player:
         self.playlist.selection_set((self.playlist.curselection()[0] - 1) % self.playlist.size())
         self.play()
 
+
+
     def set_volume(self, val):
         pygame.mixer.music.set_volume(int(val) / 100)
+
 
 
     def check_selected_playlist(self):
@@ -233,7 +268,7 @@ class MP3Player:
 if __name__ == "__main__":
     root = Tk()
     mp3_player = MP3Player(root)
-    mp3_player.remove_empty_lines()
+    #mp3_player.remove_empty_lines()
     mp3_player.initialise_playlists()
     mp3_player.initialise_songs()
     while True:
