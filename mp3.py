@@ -4,7 +4,7 @@ from tkinter import Tk, Frame, Button, Label, Scale, Listbox, StringVar, PhotoIm
 from tkinter import filedialog
 from mutagen.mp3 import MP3
 import random
-import datetime
+from timeit import default_timer as timer
 
 class MP3Player:
     def __init__(self, master):
@@ -83,8 +83,11 @@ class MP3Player:
         self.currently_selected_playlist = ""
         self.song = ""
         self.playlist_length = 0
-        self.time_played = []
-        self.time_paused = []
+        self.time_start = 0
+        self.time_end = 0
+        self.time_played = 0
+        self.time_paused = 0
+        self.stored_time_played = []
         self.paused = False
         self.playing = False
         
@@ -103,8 +106,7 @@ class MP3Player:
             self.stored_playlists.insert(0, txt[i])
             self.playlist_folder.insert(0,  txt[i])
             self.stored_songs.insert(0,(list(self.playlist_folder.get(0, -1))))
-            self.time_played.append([])
-            
+            self.stored_time_played.append("")
 
 
     def initialise_songs(self):
@@ -139,16 +141,23 @@ class MP3Player:
             song = self.stored_songs[self.currently_selected_playlist][i]
             if song[-1] != "3":
                 song = song[0:-1]
-            audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
+            audio = (MP3("C:\\Users\\hamue\\Desktop\\New Folder\\Coding-Project\\Music\\"+song)).info
             num+=audio.length
         self.playlist_length = num
         
 
 
     def count_time(self):
-        pass
-        
-            
+        if self.currently_selected_playlist != "":
+            if self.playing == True:
+                self.time_played = (timer()-self.time_start+self.time_paused)
+            self.stored_time_played[self.currently_selected_playlist] = round(self.time_played)
+            self.statistics.insert(1, self.stored_time_played[self.currently_selected_playlist]) 
+            self.statistics.delete(2, "end")
+            print(self.stored_time_played, self.currently_selected_playlist)
+
+    
+
 
     def create_playlist(self):
         name = self.input_text.get(1.0, "end-1c")
@@ -158,7 +167,8 @@ class MP3Player:
         with open("playlists.txt", "w") as file:
             for line in self.stored_playlists:
                 file.write("".join(line) + "\n")
-        self.time_played.append([])
+        self.stored_time_played.append("")
+            
 
         
 
@@ -177,8 +187,8 @@ class MP3Player:
 
 
 
+
     def delete_song(self):
-        print(self.stored_songs)
         self.stored_songs[self.currently_selected_playlist].pop(len(self.stored_songs[self.currently_selected_playlist]) - self.playlist.curselection()[0] - 1)
         with open(self.stored_playlists[self.currently_selected_playlist][0]+".txt", "w") as file:
             for line in self.stored_songs[self.currently_selected_playlist]:
@@ -220,7 +230,7 @@ class MP3Player:
             hours = 0
         seconds = round(self.playlist_length % 60)
         self.statistics.insert(0, self.playlist_folder.get(self.selected_playlist) + " is " + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
-        self.statistics.delete(1, "end")
+        self.statistics.delete(2, "end")
 
 
 
@@ -251,7 +261,7 @@ class MP3Player:
             selected = selected[0:-1]
         if self.paused == False or self.song != selected:
             
-            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+selected)
+            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\New Folder\\Coding-Project\\Music\\"+selected)
             self.song = selected
             pygame.mixer.music.play()
             self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(selected))
@@ -263,7 +273,7 @@ class MP3Player:
         self.play_button.config(image=pause_image, command=self.pause)
         self.play_button.image = pause_image
 
-        self.time_played.append(datetime.datetime.now())
+        self.time_start = timer()
         
 
     def pause(self):
@@ -274,7 +284,10 @@ class MP3Player:
         self.play_button.config(image=play_image, command=self.play)
         self.play_button.image = play_image
 
-        self.time_paused.append(datetime.datetime.now())
+
+        self.time_end = timer()
+        self.time_paused += (timer()-self.time_start)
+
 
 
 
