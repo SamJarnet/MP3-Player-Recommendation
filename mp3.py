@@ -160,17 +160,15 @@ class MP3Player:
         #holds the times that the music was played and paused
         self.time_played = []
         self.time_paused = []
-
+        self.time_difference = 0
 
         #holds the current state of the pygame mixer
         self.paused = False
         self.playing = False
 
-        
+    
 
-
-
-        #initialises the pygame mixer
+        #initialises pygame and the pygame mixer
         pygame.init()
         pygame.mixer.init()
 
@@ -187,8 +185,7 @@ class MP3Player:
             self.playlist_folder.insert(0,  txt[i])
             self.stored_songs.insert(0,(list(self.playlist_folder.get(0, -1))))
             #insert an empty list to ensure that there is the correct number of indices for storing playlist lengths
-            self.time_played.append([])
-           
+    
 
 
 
@@ -203,6 +200,8 @@ class MP3Player:
             else:
                 with open(self.stored_playlists[i][0]+".txt", "w") as file:
                     file.write("")
+            self.time_played.append([0])
+            self.time_paused.append([0])    
 
 
 
@@ -224,21 +223,48 @@ class MP3Player:
 
 
     def calculate_playlist_length(self):
-        num = 0
-        for i in range (0, len(self.stored_songs[self.currently_selected_playlist])):
-            song = self.stored_songs[self.currently_selected_playlist][i]
-            if song[-1] != "3":
-                song = song[0:-1]
-            audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
-            num+=audio.length
-        self.playlist_length = num
-       
+        try:
+            num = 0
+            for i in range (0, len(self.stored_songs[self.currently_selected_playlist])):
+                song = self.stored_songs[self.currently_selected_playlist][i]
+                if song[-1] != "3":
+                    song = song[0:-1]
+                try:
+                    audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
+                    num+=audio.length
+                except:
+                    pass
+            
+            self.playlist_length = num
+        except:
+            pass
 
 
 
 
     def count_time(self):
-        pass
+        mp3_player.calculate_playlist_length()
+        minutes = round(self.playlist_length // 60)
+        if minutes >= 60:
+            hours = minutes // 60
+            minutes = minutes % 60
+        else:
+            hours = 0
+        seconds = round(self.playlist_length % 60)
+
+        
+        print(self.time_paused[self.selected_playlist], self.time_played[self.selected_playlist])
+       
+
+        self.statistics.insert(0, self.playlist_folder.get(self.selected_playlist) + " is " + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
+        self.statistics.insert(1, self.time_played[self.selected_playlist])
+        self.statistics.insert(2, self.time_paused[self.selected_playlist])
+        self.statistics.insert(3, self.time_difference)
+        self.statistics.delete(4, "end")
+
+
+
+
        
            
 
@@ -251,7 +277,6 @@ class MP3Player:
         with open("playlists.txt", "w") as file:
             for line in self.stored_playlists:
                 file.write("".join(line) + "\n")
-        self.time_played.append([])
 
 
        
@@ -297,7 +322,6 @@ class MP3Player:
         new_window.geometry("400x500")
         master = new_window
 
-
         load_box =  Listbox(master, selectmode="SINGLE", bg="darkgrey", selectbackground="darkred", width=30, height=28)
         load_box.place(x=10, y=10)
 
@@ -310,6 +334,13 @@ class MP3Player:
         search_box = Text(master, height=1, width=10)
         search_box.place(x=200, y=20)
 
+        def add_song():
+            self.playlist.insert(0, load_box.get(load_box.curselection()[0]))
+            self.stored_songs[self.selected_playlist].insert(0, load_box.get(load_box.curselection()[0]))
+            with open(self.stored_playlists[self.selected_playlist][0]+".txt", "w") as file:
+                for line in self.stored_songs[self.selected_playlist]:
+                    file.write("".join(line) + "\n")
+
         def search_music():
             text = search_box.get(1.0, "end-1c")
             load_box.delete(0, "end")
@@ -318,6 +349,9 @@ class MP3Player:
                     load_box.insert(0, data[14][i])
         search_button = Button(master, text="Search", command=search_music)
         search_button.place(x=300, y=20)
+
+        add_song_button= Button(master, text="Add song", command=add_song)
+        add_song_button.place(x=300, y=60)
 
         data = pd.read_csv("data\\data.csv")
         data = np.array(data).T
@@ -339,20 +373,12 @@ class MP3Player:
 
     def select_playlist(self):
         self.selected_playlist = self.currently_selected_playlist
+        mp3_player.remove_empty_lines(self.playlist_folder.get(self.selected_playlist)[0]+".txt")
         self.playlist_label.config(text = self.playlist_folder.get(self.selected_playlist))
         self.playlist.delete(0, "end")
         for i in range(0, len(self.stored_songs[self.selected_playlist])):
             self.playlist.insert(0, self.stored_songs[self.selected_playlist][i])
-        mp3_player.calculate_playlist_length()
-        minutes = round(self.playlist_length // 60)
-        if minutes >= 60:
-            hours = minutes // 60
-            minutes = minutes % 60
-        else:
-            hours = 0
-        seconds = round(self.playlist_length % 60)
-        self.statistics.insert(0, self.playlist_folder.get(self.selected_playlist) + " is " + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
-        self.statistics.delete(1, "end")
+        
 
 
 
@@ -381,7 +407,11 @@ class MP3Player:
 
     def add_selected_song(self):
         self.playlist.insert(0, self.recommended.get(self.recommended.curselection()[0]))
+        self.stored_songs[self.selected_playlist].insert(0, self.recommended.get(self.recommended.curselection()[0]))
 
+        with open(self.stored_playlists[self.selected_playlist][0]+".txt", "w") as file:
+            for line in self.stored_songs[self.selected_playlist]:
+                file.write("".join(line) + "\n")
 
 
 
@@ -394,7 +424,7 @@ class MP3Player:
             selected = selected[0:-1]
         if self.paused == False or self.song != selected:
            
-            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+selected)
+            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+selected)
             self.song = selected
             pygame.mixer.music.play()
             self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(selected))
@@ -407,7 +437,7 @@ class MP3Player:
         self.play_button.image = pause_image
 
 
-        self.time_played.append(datetime.datetime.now())
+        self.time_played[self.selected_playlist] = (datetime.datetime.now())
        
 
 
@@ -420,8 +450,8 @@ class MP3Player:
         self.play_button.image = play_image
 
 
-        self.time_paused.append(datetime.datetime.now())
-
+        self.time_paused[self.selected_playlist] = (datetime.datetime.now())
+        
 
 
 
@@ -473,7 +503,6 @@ if __name__ == "__main__":
     mp3_player.remove_empty_lines("playlists.txt")
     mp3_player.initialise_playlists()
     mp3_player.initialise_songs()
-    mp3_player.count_time()
     while True:
         mp3_player.check_selected_playlist()
         mp3_player.count_time()
