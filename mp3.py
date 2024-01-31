@@ -345,7 +345,7 @@ class MP3Player:
             text = search_box.get(1.0, "end-1c")
             load_box.delete(0, "end")
             for i in range(0, 100000):
-                if data[14][i][0:len(text)].lower() == text.lower() or (data[14][i].lower().__contains__(text.lower()) and (len(text)-(data[14][i].lower().find(text.lower())) )**2 < 25):
+                if data[14][i][0:len(text)].lower() == text.lower() or (data[14][i].lower().__contains__(text.lower()) and (len(text)-(data[14][i].lower().find(text.lower())) )**2 < 25 and len(text) > 2):
                     load_box.insert(0, data[14][i])
         search_button = Button(master, text="Search", command=search_music)
         search_button.place(x=300, y=20)
