@@ -1,12 +1,15 @@
 import os
 import pygame
-from tkinter import Tk, Frame, Button, Label, Scale, Listbox, StringVar, PhotoImage, Text, Toplevel, Scrollbar
+from tkinter import Tk, Frame, Button, Label, Scale, Listbox, StringVar, PhotoImage, Text, Toplevel, Scrollbar, messagebox
 from tkinter import filedialog
 from mutagen.mp3 import MP3
 import random
 import datetime
 import numpy as np
 import pandas as pd
+import customtkinter
+import sqlite3
+import bcrypt
 
 #import network
 
@@ -161,12 +164,20 @@ class MP3Player:
         self.time_played = []
         self.time_paused = []
         self.time_difference = 0
+        self.start_time = datetime.datetime.now()
+        self.total_mins = 0
+        self.total_secs = 0
 
         #holds the current state of the pygame mixer
-        self.paused = False
+        self.paused = True
         self.playing = False
 
-    
+
+        self.conn = sqlite3.connect("logins.db")
+        self.cursor = self.conn.cursor()
+        
+        
+
 
         #initialises pygame and the pygame mixer
         pygame.init()
@@ -218,8 +229,83 @@ class MP3Player:
             file.writelines(new_arr)
 
 
+    def create_login_table(self):
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                username TEXT NOT NULL,
+                password TEXT NOT NULL)''')
+        self.frame1 = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=10, border_color="black")
+        self.frame1.place(x=280,y=100)
+        
+        signup_label = customtkinter.CTkLabel(self.frame1, text="Sign up", width=10, height=2)
+        signup_label.place(x=280, y=20)
+
+        self.username_entry = customtkinter.CTkEntry(self.frame1, placeholder_text="Username", width=100, height=5)
+        self.username_entry.place(x=230, y=80)
+
+        self.password_entry = customtkinter.CTkEntry(self.frame1, show="*", placeholder_text="Password", width=100, height=5)
+        self.password_entry.place(x=230, y=150)
+
+        signup_button = customtkinter.CTkButton(self.frame1, command=self.signup, text="Sign up", width=10, height=2)
+        signup_button.place(x=230, y=220)
+
+        login_label = customtkinter.CTkLabel(self.frame1, text="Already have an account?", width=10, height=2)
+        login_label.place(x=230, y=250)
+
+        login_button = customtkinter.CTkButton(self.frame1, command=self.login, text="Login", width=10, height=2)
+        login_button.place(x=395, y=250)
 
 
+    def signup(self):
+        username = self.username_entry.get()
+        password = self.password_entry.get()
+        if username != "" and password != "":
+            self.cursor.execute("SELECT username FROM users WHERE username=?", [username])
+            if self.cursor.fetchone() is not None:
+                messagebox.showerror("Error", "Username already exists")
+            else:
+                encoded_password = password.encode("utf-8")
+                hashed_password = bcrypt.hashpw(encoded_password, bcrypt.gensalt())
+                self.cursor.execute("INSERT INTO users VALUES (?, ?)", [username, hashed_password])
+                self.conn.commit()
+                messagebox.showinfo("Success", "Account has been created.")
+        else:
+            messagebox.showerror("Error", "Enter all data.")
+
+    def login_account(self):
+        username = self.username_entry2.get()
+        password = self.password_entry2.get()
+        if username != "" and password != "":
+            self.cursor.execute("SELECT password FROM users WHERE username=?", [username]) 
+            result = self.cursor.fetchone()
+            if result:
+                if bcrypt.checkpw(password.encode("utf-8"), result[0]):
+                    messagebox.showinfo("Success", "Logged in successfully.")
+                    self.frame2.destroy()
+                else:
+                    messagebox.showerror("Error", "Invalid password.")
+            else:
+                messagebox.showerror("Error", "Invalid username.")
+        else:
+            messagebox.showerror("Error", "Enter all data.")
+
+    def login(self):
+        self.frame1.destroy()
+        self.frame2 = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=10, border_color="black")
+        self.frame2.place(x=280,y=100)
+
+        login_label2 = customtkinter.CTkLabel(self.frame2, text="Log in")
+        login_label2.place(x=280, y=20)
+
+    
+        self.username_entry2 = customtkinter.CTkEntry(self.frame2, placeholder_text="Username", width=100, height=5)
+        self.username_entry2.place(x=230, y=80)
+
+        self.password_entry2 = customtkinter.CTkEntry(self.frame2, show="*", placeholder_text="Password", width=100, height=5)
+        self.password_entry2.place(x=230, y=150)
+
+        login_button2 = customtkinter.CTkButton(self.frame2, command=self.login_account, text="Sign up", width=10, height=2)
+        login_button2.place(x=230, y=220)
 
 
     def calculate_playlist_length(self):
@@ -230,14 +316,14 @@ class MP3Player:
                 if song[-1] != "3":
                     song = song[0:-1]
                 try:
-                    audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
+                    audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
                     num+=audio.length
                 except:
                     pass
             
             self.playlist_length = num
         except:
-            pass
+            pass    
 
 
 
@@ -251,15 +337,21 @@ class MP3Player:
         else:
             hours = 0
         seconds = round(self.playlist_length % 60)
-
         
-        print(self.time_paused[self.selected_playlist], self.time_played[self.selected_playlist])
-       
+
+        try:
+            
+            mins = float(str(datetime.datetime.now())[-12:-10]) - float(str(self.start_time)[-12:-10]) - float(str(self.time_difference)[-12:-10])
+            secs = float(str(datetime.datetime.now())[-9:]) - float(str(self.start_time)[-9:]) - float(str(self.time_difference)[-9:])
+        except:
+            mins = 0
+            secs = 0
+        
 
         self.statistics.insert(0, self.playlist_folder.get(self.selected_playlist) + " is " + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
         self.statistics.insert(1, self.time_played[self.selected_playlist])
-        self.statistics.insert(2, self.time_paused[self.selected_playlist])
-        self.statistics.insert(3, self.time_difference)
+        self.statistics.insert(2, str(self.time_difference)[-9:])
+        self.statistics.insert(3, str(mins) + " minutes " + str(secs)  )
         self.statistics.delete(4, "end")
 
 
@@ -424,7 +516,7 @@ class MP3Player:
             selected = selected[0:-1]
         if self.paused == False or self.song != selected:
            
-            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+selected)
+            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+selected)
             self.song = selected
             pygame.mixer.music.play()
             self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(selected))
@@ -438,8 +530,17 @@ class MP3Player:
 
 
         self.time_played[self.selected_playlist] = (datetime.datetime.now())
-       
 
+        try: 
+            self.time_difference = self.time_played[self.selected_playlist] -self.time_paused[self.selected_playlist]
+        except:
+            self.time_difference = datetime.datetime.now()-datetime.datetime.now()
+        if str(self.time_difference)[0] != "-":
+            self.total_mins += float(str(self.time_difference)[-12:-10])
+            self.total_secs += float(str(self.time_difference)[-9:])
+        else:
+            self.total_mins += 0
+            self.total_secs += 0
 
     def pause(self):
         pygame.mixer.music.pause()
@@ -500,6 +601,7 @@ class MP3Player:
 if __name__ == "__main__":
     root = Tk()
     mp3_player = MP3Player(root)
+    #mp3_player.create_login_table()
     mp3_player.remove_empty_lines("playlists.txt")
     mp3_player.initialise_playlists()
     mp3_player.initialise_songs()
