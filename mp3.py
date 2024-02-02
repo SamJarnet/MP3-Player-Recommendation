@@ -142,6 +142,9 @@ class MP3Player:
         self.statistics = Listbox(self.master, bg="darkgrey", width=55, height=9)
         self.statistics.place(x=900, y=65)
 
+        #creates account button to open the login/sign in system
+        self.account_button = Button(self.master, text="Accounts", command=self.create_login_table)
+        self.account_button.place(x=1170, y=27)
 
         #holds the playlists and songs that have been loaded
         self.stored_playlists = []
@@ -167,8 +170,11 @@ class MP3Player:
         self.start_time = datetime.datetime.now()
         self.total_mins = 0
         self.total_secs = 0
+        self.saved_mins = 0
+        self.saved_secs = 0
 
         #holds the current state of the pygame mixer
+        self.freeze = True
         self.paused = True
         self.playing = False
 
@@ -176,7 +182,7 @@ class MP3Player:
         self.conn = sqlite3.connect("logins.db")
         self.cursor = self.conn.cursor()
         
-        
+        self.login_created = False
 
 
         #initialises pygame and the pygame mixer
@@ -213,10 +219,6 @@ class MP3Player:
                     file.write("")
             self.time_played.append([0])
             self.time_paused.append([0])    
-
-
-
-
  
     def remove_empty_lines(self, text_file):
         with open(text_file, "r") as file:
@@ -230,30 +232,32 @@ class MP3Player:
 
 
     def create_login_table(self):
-        self.cursor.execute('''
-            CREATE TABLE IF NOT EXISTS users (
-                username TEXT NOT NULL,
-                password TEXT NOT NULL)''')
-        self.frame1 = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=10, border_color="black")
-        self.frame1.place(x=280,y=100)
-        
-        signup_label = customtkinter.CTkLabel(self.frame1, text="Sign up", width=10, height=2)
-        signup_label.place(x=280, y=20)
+        if self.login_created == False:
+            self.login_created = True
+            self.cursor.execute('''
+                CREATE TABLE IF NOT EXISTS users (
+                    username TEXT NOT NULL,
+                    password TEXT NOT NULL)''')
+            self.frame1 = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=10, border_color="black")
+            self.frame1.place(x=280,y=100)
+            
+            signup_label = customtkinter.CTkLabel(self.frame1, text="Sign up", width=10, height=2)
+            signup_label.place(x=280, y=20)
 
-        self.username_entry = customtkinter.CTkEntry(self.frame1, placeholder_text="Username", width=100, height=5)
-        self.username_entry.place(x=230, y=80)
+            self.username_entry = customtkinter.CTkEntry(self.frame1, placeholder_text="Username", width=100, height=5)
+            self.username_entry.place(x=230, y=80)
 
-        self.password_entry = customtkinter.CTkEntry(self.frame1, show="*", placeholder_text="Password", width=100, height=5)
-        self.password_entry.place(x=230, y=150)
+            self.password_entry = customtkinter.CTkEntry(self.frame1, show="*", placeholder_text="Password", width=100, height=5)
+            self.password_entry.place(x=230, y=150)
 
-        signup_button = customtkinter.CTkButton(self.frame1, command=self.signup, text="Sign up", width=10, height=2)
-        signup_button.place(x=230, y=220)
+            signup_button = customtkinter.CTkButton(self.frame1, command=self.signup, text="Sign up", width=10, height=2)
+            signup_button.place(x=230, y=220)
 
-        login_label = customtkinter.CTkLabel(self.frame1, text="Already have an account?", width=10, height=2)
-        login_label.place(x=230, y=250)
+            login_label = customtkinter.CTkLabel(self.frame1, text="Already have an account?", width=10, height=2)
+            login_label.place(x=230, y=250)
 
-        login_button = customtkinter.CTkButton(self.frame1, command=self.login, text="Login", width=10, height=2)
-        login_button.place(x=395, y=250)
+            login_button = customtkinter.CTkButton(self.frame1, command=self.login, text="Login", width=10, height=2)
+            login_button.place(x=395, y=250)
 
 
     def signup(self):
@@ -282,6 +286,7 @@ class MP3Player:
                 if bcrypt.checkpw(password.encode("utf-8"), result[0]):
                     messagebox.showinfo("Success", "Logged in successfully.")
                     self.frame2.destroy()
+                    self.login_created = False
                 else:
                     messagebox.showerror("Error", "Invalid password.")
             else:
@@ -341,17 +346,28 @@ class MP3Player:
 
         try:
             
-            mins = float(str(datetime.datetime.now())[-12:-10]) - float(str(self.start_time)[-12:-10]) - float(str(self.time_difference)[-12:-10])
-            secs = float(str(datetime.datetime.now())[-9:]) - float(str(self.start_time)[-9:]) - float(str(self.time_difference)[-9:])
+            mins = float(str(datetime.datetime.now())[-12:-10]) - float(str(self.start_time)[-12:-10]) - self.total_mins
+            secs = float(str(datetime.datetime.now())[-9:-6]) - float(str(self.start_time)[-9:-6]) - self.total_secs
+
+            if secs < 0:
+                secs+=60
+                mins-=1
+   
+                
         except:
             mins = 0
             secs = 0
         
 
+
         self.statistics.insert(0, self.playlist_folder.get(self.selected_playlist) + " is " + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
-        self.statistics.insert(1, self.time_played[self.selected_playlist])
-        self.statistics.insert(2, str(self.time_difference)[-9:])
-        self.statistics.insert(3, str(mins) + " minutes " + str(secs)  )
+        self.statistics.insert(1, datetime.datetime.now()-self.start_time)
+        self.statistics.insert(2, str(self.total_mins) + " " + str(self.total_secs))
+        if self.freeze == False:
+            self.statistics.insert(3, str(mins) + " minutes " + str(secs)  )
+        else:
+            self.statistics.insert(3, str(self.saved_mins) + " minutes " + str(self.saved_secs))
+
         self.statistics.delete(4, "end")
 
 
@@ -535,12 +551,21 @@ class MP3Player:
             self.time_difference = self.time_played[self.selected_playlist] -self.time_paused[self.selected_playlist]
         except:
             self.time_difference = datetime.datetime.now()-datetime.datetime.now()
-        if str(self.time_difference)[0] != "-":
-            self.total_mins += float(str(self.time_difference)[-12:-10])
-            self.total_secs += float(str(self.time_difference)[-9:])
-        else:
-            self.total_mins += 0
-            self.total_secs += 0
+
+        try: 
+            if str(self.time_difference)[0] != "-":
+                self.total_mins += float(str(self.time_difference)[-12:-10])
+                self.total_secs += float(str(self.time_difference)[-9:-6])
+                if self.total_secs > 60:
+                    self.total_secs -= 60
+                    self.total_mins += 1
+            else:
+                self.total_mins += 0
+                self.total_secs += 0
+        except:
+            pass
+
+        self.freeze = False
 
     def pause(self):
         pygame.mixer.music.pause()
@@ -550,9 +575,18 @@ class MP3Player:
         self.play_button.config(image=play_image, command=self.play)
         self.play_button.image = play_image
 
-
+        
         self.time_paused[self.selected_playlist] = (datetime.datetime.now())
         
+        self.saved_mins = float(str(datetime.datetime.now())[-12:-10]) - float(str(self.start_time)[-12:-10]) - self.total_mins
+        self.saved_secs = float(str(datetime.datetime.now())[-9:-6]) - float(str(self.start_time)[-9:-6]) - self.total_secs
+
+
+        if self.saved_secs < 0:
+            self.saved_secs+=60
+            self.saved_mins-=1
+        
+        self.freeze = True
 
 
 
