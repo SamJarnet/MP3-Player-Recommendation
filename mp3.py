@@ -284,6 +284,7 @@ class MP3Player:
         else:
             messagebox.showerror("Error", "Enter all data.")
 
+
     def login_account(self):
         username = self.username_entry2.get()
         password = self.password_entry2.get()
@@ -315,6 +316,7 @@ class MP3Player:
         else:
             messagebox.showerror("Error", "Enter all data.")
 
+
     def login(self):
         self.frame1.destroy()
         self.frame2 = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=10, border_color="black")
@@ -342,7 +344,7 @@ class MP3Player:
                 if song[-1] != "3":
                     song = song[0:-1]
                 try:
-                    audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
+                    audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
                     num+=audio.length
                 except:
                     pass
@@ -350,7 +352,6 @@ class MP3Player:
             self.playlist_length = num
         except:
             pass    
-
 
 
     def count_time(self):
@@ -445,6 +446,10 @@ class MP3Player:
         search_box = Text(master, height=1, width=10)
         search_box.place(x=200, y=20)
 
+        info_box = Listbox(master, height=14, width = 20)
+        info_box.place(x=150, y=200)
+
+        self.searched_songs = []
 
 
         def add_song():
@@ -454,24 +459,34 @@ class MP3Player:
                 for line in self.stored_songs[self.selected_playlist]:
                     file.write("".join(line) + "\n")
 
-
+        def show_info():
+            info_box.delete(0, "end")
+            info_box.insert(0,"Artist: " + data[16])
+        
 
         def search_music():
             text = search_box.get(1.0, "end-1c")
             load_box.delete(0, "end")
+            self.searched_songs = []
             for i in range(0, 100000):
-                if data[14][i][0:len(text)].lower() == text.lower() or (data[14][i].lower().__contains__(text.lower()) and (len(text)-(data[14][i].lower().find(text.lower())) )**2 < 25 and len(text) > 2):
-                    load_box.insert(0, data[14][i])
+                if data[15][i][0:len(text)].lower() == text.lower() or (data[15][i].lower().__contains__(text.lower()) and (len(text)-(data[15][i].lower().find(text.lower())) )**2 < 25 and len(text) > 2):
+                    self.searched_songs.insert(0, data[15][i])
+                    load_box.insert(0, data[15][i])
         search_button = Button(master, text="Search", command=search_music)
         search_button.place(x=300, y=20)
 
         add_song_button= Button(master, text="Add song", command=add_song)
         add_song_button.place(x=300, y=60)
 
+        show_info_button = Button(master, text="Show information", command=show_info)
+        show_info_button.place(x=300, y=100)
+
+        
+
         data = pd.read_csv("data\\data.csv")
         data = np.array(data).T
         for i in range(0, 100):
-            load_box.insert(0, data[14][i])
+            load_box.insert(0, data[15][i])
         
 
 
@@ -528,7 +543,7 @@ class MP3Player:
         
         
         if self.paused == False or self.song != selected:
-            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+selected)
+            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+selected)
             self.song = selected
             pygame.mixer.music.play()
             self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(selected))
@@ -612,10 +627,8 @@ class MP3Player:
 
 
     def enqueue(self):
-    
         if ((self.tail + 1) % self.queue_length == self.head):
             print("The circular queue is full\n")
-
         elif (self.head == -1):
             self.head = 0
             self.tail = 0
@@ -632,8 +645,8 @@ class MP3Player:
             except:
                 pass
 
+
     def dequeue(self):
-        
         if (self.head == -1):
             print("The circular queue is empty\n")
 
@@ -642,7 +655,6 @@ class MP3Player:
             self.head = -1
             self.tail = -1
             self.queue_lisbox.delete(0)
-
             return temp
 
         else:
@@ -650,7 +662,6 @@ class MP3Player:
             self.head = (self.head + 1) % self.queue_length
             self.queue_lisbox.delete(0)
             print(self.queue)
-           
             return temp
         
 
