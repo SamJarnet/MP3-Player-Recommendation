@@ -146,6 +146,11 @@ class MP3Player:
         #creates the queue button to open the queue frame
         self.queue_button = Button(self.master, text="Queue", command=self.add_queue)
         self.queue_button.place(x=950, y=625)
+        
+        self.queue_play = ""
+        self.queue_length = 15
+        self.queue = [None] * self.queue_length
+        self.head = self.tail = -1
 
         #holds the playlists and songs that have been loaded
         self.stored_playlists = []
@@ -337,7 +342,7 @@ class MP3Player:
                 if song[-1] != "3":
                     song = song[0:-1]
                 try:
-                    audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
+                    audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
                     num+=audio.length
                 except:
                     pass
@@ -512,16 +517,21 @@ class MP3Player:
 
     def play(self):
         self.playing = True
-        selected = self.playlist.get(self.playlist.curselection()[0])
+        print(self.queue[self.tail])
+        if self.playlist.get(self.playlist.curselection()[0]) != self.queue[self.tail] and len(self.playlist.curselection()) > 0:
+            self.enqueue()
+        
+        
+        selected = self.queue[self.tail]
         if selected[-1] != "3":
             selected = selected[0:-1]
+        
+        
         if self.paused == False or self.song != selected:
-           
-            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+selected)
+            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+selected)
             self.song = selected
             pygame.mixer.music.play()
             self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(selected))
-           
         elif self.paused == True:
             self.paused = False
             pygame.mixer.music.unpause()
@@ -531,12 +541,10 @@ class MP3Player:
 
 
         self.time_played[self.selected_playlist] = (datetime.datetime.now())
-
         try: 
             self.time_difference = self.time_played[self.selected_playlist] -self.time_paused[self.selected_playlist]
         except:
             self.time_difference = datetime.datetime.now()-datetime.datetime.now()
-
         try: 
             if str(self.time_difference)[0] != "-":
                 self.total_mins += float(str(self.time_difference)[-12:-10])
@@ -549,8 +557,9 @@ class MP3Player:
                 self.total_secs += 0
         except:
             pass
-
         self.freeze = False
+
+
 
     def pause(self):
         pygame.mixer.music.pause()
@@ -559,40 +568,96 @@ class MP3Player:
         play_image = PhotoImage(file="play_button.png")
         self.play_button.config(image=play_image, command=self.play)
         self.play_button.image = play_image
-
-        
         self.time_paused[self.selected_playlist] = (datetime.datetime.now())
-        
         self.saved_mins = float(str(datetime.datetime.now())[-12:-10]) - float(str(self.start_time)[-12:-10]) - self.total_mins
         self.saved_secs = float(str(datetime.datetime.now())[-9:-6]) - float(str(self.start_time)[-9:-6]) - self.total_secs
-
-
         if self.saved_secs < 0:
             self.saved_secs+=60
             self.saved_mins-=1
         self.freeze = True
 
+
+
     def add_queue(self):
         if self.queue_open == False:
+
             self.queue_frame = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", width=200, height=480, border_width=2, border_color="black")
             self.queue_frame.place(x=640,y=100)
 
-            add_to_queue_button = customtkinter.CTkButton(self.queue_frame, text="Add to queue", command=self.add_to_queue)
-            add_to_queue_button.place(x=650, y=110)
+            self.add_to_queue_button = Button(self.master, text="Add", command=self.enqueue)
+            self.add_to_queue_button.place(x=650, y=110)
+
+            self.remove_from_queue_button = Button(self.master, text="Remove", command=self.dequeue)
+            self.remove_from_queue_button.place(x=700, y=110)
+
+            self.play_queue_button = Button(self.master, text="Play", command=self.play)
+            self.play_queue_button.place(x=780, y=110)
+
+            self.queue_lisbox = Listbox(self.master, selectmode="SINGLE", bg="darkgrey", selectbackground="darkred", width=31, height=27)
+            self.queue_lisbox.place(x=645, y=140)
+
+            for i in range(self.head, self.tail):
+                self.queue_lisbox.insert(0, self.queue[i])
+
             self.queue_open = True
+            
         else:
             self.queue_frame.destroy()
+            self.add_to_queue_button.destroy()
+            self.remove_from_queue_button.destroy()
+            self.queue_lisbox.destroy()
+            self.play_queue_button.destroy()
             self.queue_open = False
 
-    def add_to_queue(self):
-        self.stored_songs
+
+
+    def enqueue(self):
+    
+        if ((self.tail + 1) % self.queue_length == self.head):
+            print("The circular queue is full\n")
+
+        elif (self.head == -1):
+            self.head = 0
+            self.tail = 0
+            self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
+            try:
+                self.queue_lisbox.insert(0, self.playlist.get(self.playlist.curselection()[0]))
+            except:
+                pass
+        else:
+            self.tail = (self.tail + 1) % self.queue_length
+            self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
+            try:
+                self.queue_lisbox.insert(0, self.playlist.get(self.playlist.curselection()[0]))
+            except:
+                pass
+
+    def dequeue(self):
+        
+        if (self.head == -1):
+            print("The circular queue is empty\n")
+
+        elif (self.head == self.tail):
+            temp = self.queue[self.head]
+            self.head = -1
+            self.tail = -1
+            self.queue_lisbox.delete(0)
+
+            return temp
+
+        else:
+            temp = self.queue[self.head]
+            self.head = (self.head + 1) % self.queue_length
+            self.queue_lisbox.delete(0)
+            print(self.queue)
+           
+            return temp
         
 
     def skip_forward(self):
         pygame.mixer.music.stop()
-        self.playlist.selection_clear(0, "end")
-        self.playlist.selection_set((self.playlist.curselection()[0] + 1) % self.playlist.size())
-        self.play()
+        self.queue_play = mp3_player.dequeue()
+        mp3_player.play()
 
 
 
