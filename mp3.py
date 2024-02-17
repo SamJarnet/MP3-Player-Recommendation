@@ -126,8 +126,9 @@ class MP3Player:
         self.freeze = True
         self.paused = True
         self.playing = False
-        self.skip_used = False
-
+        self.skip_forward_used = False
+        self.skip_backward_used = False
+        self.last_removed = []
         
 
         #initialises pygame and the pygame mixer
@@ -212,7 +213,6 @@ class MP3Player:
 
     #deletes the selected song from the playlist
     def delete_song(self):
-        print(self.stored_songs)
         self.stored_songs[self.currently_selected_playlist].pop(len(self.stored_songs[self.currently_selected_playlist]) - self.playlist.curselection()[0] - 1)
         with open(self.stored_playlists[self.currently_selected_playlist][0] + self.login_manager.user +".txt", "w") as file:
             for line in self.stored_songs[self.currently_selected_playlist]:
@@ -265,23 +265,34 @@ class MP3Player:
     #loads the song into the pygame music mixer and plays the song, also switches the play icon to a pause icon to indicate playing
     def play(self):
         self.playing = True
-        if self.playlist.get(self.playlist.curselection()[0]) != self.create_queue.queue[self.create_queue.tail] and len(self.playlist.curselection()) > 0:
-            self.create_queue.enqueue()
-        selected = self.create_queue.queue[self.create_queue.tail]
-        if self.skip_used == True:
-            selected = self.create_queue.queue_play
-            self.skip_used = False
+        if len(self.playlist.curselection()) > 0:
+            if self.playlist.get(self.playlist.curselection()[0]) != self.create_queue.queue[self.create_queue.tail] :
+                self.create_queue.enqueue()
 
-        if selected[-1] != "3":
+        selected = self.create_queue.queue[self.create_queue.tail]
+
+        if self.skip_forward_used:
+            selected = self.create_queue.dequeue()
+            self.skip_forward_used = False
+
+        elif self.skip_backward_used:
+            self.create_queue.enqueue()
+            self.skip_backward_used = False
+            selected = self.create_queue.queue[self.create_queue.tail]
+
+        
+        if selected[-1] == "\n":
             selected = selected[0:-1]
+
         if self.paused == False or self.song != selected:
-            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+selected)
+            pygame.mixer.music.load("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+selected)
             self.song = selected
             pygame.mixer.music.play()
             self.currently_playing_song.config(text="Currently Playing: " + os.path.basename(selected))
         elif self.paused == True:
             self.paused = False
             pygame.mixer.music.unpause()
+
         pause_image = PhotoImage(file="pause_button.png")
         self.play_button.config(image=pause_image, command=self.pause)
         self.play_button.image = pause_image
@@ -296,10 +307,10 @@ class MP3Player:
         pygame.mixer.music.pause()
         self.paused = True
         self.playing = False
+
         play_image = PhotoImage(file="play_button.png")
         self.play_button.config(image=play_image, command=self.play)
         self.play_button.image = play_image        
-
         self.calculate_time.check_pause_time()
 
 
@@ -307,18 +318,16 @@ class MP3Player:
     #skips to the next song in the queue and removes the top item
     def skip_forward(self):
         pygame.mixer.music.stop()
-        self.skip_used = True
-        self.queue_play = mp3_player.create_queue.dequeue()
+        self.skip_forward_used = True
         mp3_player.play()
+        print(self.last_removed)
 
 
     #goes back one song in the queue and adds back to the top item
     def skip_backward(self):
         pygame.mixer.music.stop()
-        self.playlist.selection_clear(0, "end")
-        self.playlist.selection_set((self.playlist.curselection()[0] - 1) % self.playlist.size())
-        self.play()
-
+        self.skip_backward_used = True
+        mp3_player.play()
 
     #sets the volume based on the volume slider
     def set_volume(self, val):
