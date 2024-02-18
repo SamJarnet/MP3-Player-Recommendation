@@ -115,6 +115,7 @@ class MP3Player:
         self.stored_playlists = []
         self.stored_songs = []
        
+        #holds the number of songs with characteristics and their individual scores.
         self.song_count = 0
         self.song_score = []
 
