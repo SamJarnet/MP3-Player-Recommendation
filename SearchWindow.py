@@ -1,7 +1,7 @@
 from tkinter import Tk, Listbox, Scrollbar, Text, Button
 import numpy as np
 import pandas as pd
-#import network
+import network
 
 class SearchWindow:
     def __init__(self, mp3_player):
@@ -86,10 +86,10 @@ class SearchWindow:
             self.mp3_player.song_count += 1
 
             self.mp3_player.song_score[self.mp3_player.selected_playlist] += self.data[i][self.searched_songs[self.load_box.curselection()[0]]]
-            #result = network.forward_prop(network.W1, network.b1, network.W2, network.b2, network.data_train[i][self.searched_songs[self.load_box.curselection()[0]]])
+            result = network.forward_prop(network.W1, network.b1, network.W2, network.b2, network.data_train[i][self.searched_songs[self.load_box.curselection()[0]]])
 
-            # for i in range(0, len(result)):
-            #     try:
-            #         self.mp3_player.song_score += sum(result[i])
-            #     except:
-            #         pass
+            for i in range(0, len(result)):
+                try:
+                    self.mp3_player.song_score += sum(result[i])
+                except:
+                    pass

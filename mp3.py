@@ -1,6 +1,7 @@
 import os
 import pygame
 
+
 from tkinter import Tk, Button, Label, Scale, Listbox, PhotoImage, Text
 from tkinter import filedialog
 
@@ -8,7 +9,8 @@ import LoginManager
 import SearchWindow
 import CalculateTime
 import CreateQueue
-#import network
+import numpy as np
+import pandas as pd
 
 
 class MP3Player:
@@ -113,6 +115,10 @@ class MP3Player:
         self.stored_playlists = []
         self.stored_songs = []
        
+        self.song_count = 0
+        self.song_score = []
+
+
         #holds the currently selected playlist
         self.selected_playlist = 0
         self.currently_selected_playlist = ""
@@ -146,7 +152,7 @@ class MP3Player:
             self.stored_playlists.insert(0, txt[i])
             self.playlist_folder.insert(0,  txt[i])
             self.stored_songs.insert(0,(list(self.playlist_folder.get(0, -1))))
-
+            self.song_score.insert(0, 0)
             
             #insert an empty list to ensure that there is the correct number of indices for storing playlist lengths
             self.calculate_time.playlist_length.insert(0, []) 
@@ -194,6 +200,7 @@ class MP3Player:
         with open(name[0] + self.login_manager.user+  ".txt", "w") as file:
             file.write("")
         self.calculate_time.playlist_length.insert(0, [])
+        self.song_score.insert(0, 0)
 
        
 
@@ -251,7 +258,18 @@ class MP3Player:
 
     #loads the recommended song 
     def recommend_songs(self):
-        self.recommended.insert(0, "Bosh")
+        self.recommended.delete(0, "end")
+        self.data = pd.read_csv("data\\data_with_totals.csv")
+        self.data = np.array(self.data).T 
+        average = self.song_score[self.selected_playlist]/self.song_count
+        temp = []
+        for i in range(0, 170653):
+            temp.append(average - self.data[15][i] + np.random.randint(-2, 2))
+            
+        
+        for i in range(0, 5):
+            self.recommended.insert(0, self.search_window.data[15][np.argmax(temp)])
+            temp.pop(np.argmax(temp))
 
 
     #adds the selected song from the recommended box into the playlist and writes the song to the file
