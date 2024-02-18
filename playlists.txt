@@ -1,8 +1,0 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-testing
->>>>>>> parent of abbe03c (almost done)
-=======
-testing
->>>>>>> parent of abbe03c (almost done)

@@ -27,15 +27,8 @@ class CalculateTime:
             if song[-1] != "3":
                 song = song[0:-1]
             try:
-<<<<<<< HEAD
-<<<<<<< HEAD
+
                 audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
-=======
-                audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
->>>>>>> parent of abbe03c (almost done)
-=======
-                audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
->>>>>>> parent of abbe03c (almost done)
                 num+=audio.length
             except:
                 pass
@@ -70,17 +63,8 @@ class CalculateTime:
             mins = 0
             secs = 0
         #displays playlist data
-<<<<<<< HEAD
         self.mp3_player.statistics.insert(0, self.mp3_player.playlist_folder.get(self.selected_playlist) + " is " 
                                           + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
-
-
-=======
-        self.mp3_player.statistics.insert(0, self.mp3_player.playlist_folder.get(self.selected_playlist) + " is " + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
-<<<<<<< HEAD
->>>>>>> parent of abbe03c (almost done)
-=======
->>>>>>> parent of abbe03c (almost done)
         if self.mp3_player.freeze == False:
             self.mp3_player.statistics.insert(1, str(mins) + " minutes " + str(secs)  )
         else:
