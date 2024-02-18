@@ -8,7 +8,7 @@ class CreateQueue:
         self.master = self.mp3_player.master
         #holds queue information for operations
         self.queue_play = ""
-        self.queue_length = 4
+        self.queue_length = 15
         self.queue = [None] * self.queue_length
         self.head = self.tail = -1
         self.queue_open = False
@@ -17,8 +17,7 @@ class CreateQueue:
     def add_queue(self):
         if self.queue_open == False:
 
-            self.queue_frame = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey",
-                                                       width=200, height=480, border_width=2, border_color="black")
+            self.queue_frame = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", width=200, height=480, border_width=2, border_color="black")
             self.queue_frame.place(x=640,y=100)
 
             self.add_to_queue_button = Button(self.master, text="Add", command=self.enqueue)
@@ -30,8 +29,7 @@ class CreateQueue:
             self.play_queue_button = Button(self.master, text="Play", command=self.mp3_player.play)
             self.play_queue_button.place(x=780, y=110)
 
-            self.queue_lisbox = Listbox(self.master, selectmode="SINGLE", bg="darkgrey", selectbackground="darkblue", 
-                                        width=31, height=27)
+            self.queue_lisbox = Listbox(self.master, selectmode="SINGLE", bg="darkgrey", selectbackground="darkblue", width=31, height=27)
             self.queue_lisbox.place(x=645, y=140)
 
             for i in range(self.head, self.tail):
@@ -57,29 +55,21 @@ class CreateQueue:
         elif (self.head == -1):
             self.head = 0
             self.tail = 0
-            if self.mp3_player.skip_backward_used == False:
-                self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
-            else:
-                self.queue[self.tail] = self.mp3_player.last_removed.pop(0)
-                print(self.queue[self.tail])
+            self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
             try:
-                self.queue_lisbox.insert(self.tail, self.queue[self.tail])
+                self.queue_lisbox.insert(self.tail, self.playlist.get(self.playlist.curselection()[0]))
             except:
                 pass
         else:
             self.tail = (self.tail + 1) % self.queue_length
-            if self.mp3_player.skip_backward_used == False:
-                self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
-            else:
-                self.queue[self.tail] = self.mp3_player.last_removed.pop()
-                print(self.queue[self.tail])
+            self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
             try:
-                self.queue_lisbox.insert(self.tail, self.queue[self.tail])
+                self.queue_lisbox.insert(self.tail, self.playlist.get(self.playlist.curselection()[0]))
             except:
                 pass
 
-
     #removes the top song from the queue and deletes it from the queue listbox
+
     def dequeue(self):
         if (self.head == -1):
             print("The circular queue is empty\n")
@@ -89,14 +79,11 @@ class CreateQueue:
             self.head = -1
             self.tail = -1
             self.queue_lisbox.delete(0)
-            self.mp3_player.last_removed.insert(0, temp)
             return temp
 
         else:
             temp = self.queue[self.head]
             self.head = (self.head + 1) % self.queue_length
             self.queue_lisbox.delete(0)
-            self.mp3_player.last_removed.insert(0, temp)
+            print(self.queue)
             return temp
-    
-
