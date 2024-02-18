@@ -275,7 +275,7 @@ class MP3Player:
     #adds the selected song from the recommended box into the playlist and writes the song to the file
     def add_selected_song(self):
         self.playlist.insert(0, self.recommended.get(self.recommended.curselection()[0]))
-        self.stored_songs[self.selected_playlist].insert(0, self.recommendusered.get(self.recommended.curselection()[0]))
+        self.stored_songs[self.selected_playlist].insert(0, self.recommended.get(self.recommended.curselection()[0]))
 
         with open(self.stored_playlists[self.selected_playlist][0]+ self.login_manager.user +".txt", "w") as file:
             for line in self.stored_songs[self.selected_playlist]:
