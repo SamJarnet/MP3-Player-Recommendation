@@ -1,6 +1,7 @@
 from tkinter import Tk, Listbox, Scrollbar, Text, Button
 import numpy as np
 import pandas as pd
+#import network
 
 class SearchWindow:
     def __init__(self, mp3_player):
@@ -55,6 +56,7 @@ class SearchWindow:
         with open(self.mp3_player.stored_playlists[self.selected_playlist][0]+ self.mp3_player.login_manager.user +".txt", "w") as file:
             for line in self.mp3_player.stored_songs[self.selected_playlist]:
                 file.write("".join(line) + "\n")
+        self.add_bias_predictions()                
 
     #shows the artist and year of release of the selected song
     def show_info(self):
@@ -79,3 +81,16 @@ class SearchWindow:
             and (len(text)-(self.data[15][i].lower().find(text.lower())) )**2 < 25 and len(text) > 3)):
                 self.searched_songs.insert(0, i)
                 self.load_box.insert(0, self.data[15][i])
+
+    def add_bias_predictions(self):
+        for i in range(0, 14):
+            self.mp3_player.song_count += 1
+
+            self.mp3_player.song_score[self.mp3_player.selected_playlist] += self.data[i][self.searched_songs[self.load_box.curselection()[0]]]
+            #result = network.forward_prop(network.W1, network.b1, network.W2, network.b2, network.data_train[i][self.searched_songs[self.load_box.curselection()[0]]])
+
+            # for i in range(0, len(result)):
+            #     try:
+            #         self.mp3_player.song_score += sum(result[i])
+            #     except:
+            #         pass

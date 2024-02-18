@@ -26,9 +26,11 @@ class CalculateTime:
             song = self.mp3_player.stored_songs[self.selected_playlist][i]
             if song[-1] == "\n":
                 song = song[0:-1]
-            audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
-            num+=audio.length
-                
+            try:
+                audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
+                num+=audio.length
+            except:
+                pass
         self.playlist_length[self.selected_playlist] = num
 
 
@@ -99,7 +101,8 @@ class CalculateTime:
             secs = 0
 
         #displays playlist data
-        self.mp3_player.statistics.insert(0, self.mp3_player.playlist_folder.get(self.selected_playlist) + " is " + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
+        self.mp3_player.statistics.insert(0, self.mp3_player.playlist_folder.get(self.selected_playlist) + " is " 
+                                          + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
 
 
         if self.mp3_player.freeze == False:
