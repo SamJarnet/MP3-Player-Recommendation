@@ -77,7 +77,7 @@ class SearchWindow:
         text = self.search_box.get(1.0, "end-1c")
         self.load_box.delete(0, "end")
         self.searched_songs = []
-        for i in range(0, 100000):
+        for i in range(0, 170653):
             if self.data[15][i][0:len(text)].lower() == text.lower() or (self.data[15][i].lower().__contains__(text.lower()) and (len(text)-(self.data[15][i].lower().find(text.lower())) )**2 < 25 and len(text) > 2):
                 self.searched_songs.insert(0, i)
                 self.load_box.insert(0, self.data[15][i])

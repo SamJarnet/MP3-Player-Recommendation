@@ -55,14 +55,20 @@ class CreateQueue:
         elif (self.head == -1):
             self.head = 0
             self.tail = 0
-            self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
+            if self.mp3_player.skip_backward_used == False:
+                self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
+            else:
+                self.queue[self.tail] = self.mp3_player.last_removed.pop()
             try:
                 self.queue_lisbox.insert(self.tail, self.playlist.get(self.playlist.curselection()[0]))
             except:
                 pass
         else:
             self.tail = (self.tail + 1) % self.queue_length
-            self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
+            if self.mp3_player.skip_backward_used == False:
+                self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
+            else:
+                self.queue[self.tail] = self.mp3_player.last_removed.pop()
             try:
                 self.queue_lisbox.insert(self.tail, self.playlist.get(self.playlist.curselection()[0]))
             except:
