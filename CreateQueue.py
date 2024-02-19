@@ -85,6 +85,8 @@ class CreateQueue:
             self.head = -1
             self.tail = -1
             self.queue_lisbox.delete(0)
+            self.mp3_player.last_removed.insert(0, temp)
+
             return temp
 
         else:
@@ -92,4 +94,6 @@ class CreateQueue:
             self.head = (self.head + 1) % self.queue_length
             self.queue_lisbox.delete(0)
             print(self.queue)
+            self.mp3_player.last_removed.insert(0, temp)
+
             return temp
