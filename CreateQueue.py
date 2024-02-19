@@ -17,7 +17,8 @@ class CreateQueue:
     def add_queue(self):
         if self.queue_open == False:
 
-            self.queue_frame = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", width=200, height=480, border_width=2, border_color="black")
+            self.queue_frame = customtkinter.CTkFrame(self.master, bg_color="lightgrey",fg_color="darkgrey", 
+                                                      width=200, height=480, border_width=2, border_color="black")
             self.queue_frame.place(x=640,y=100)
 
             self.add_to_queue_button = Button(self.master, text="Add", command=self.enqueue)
@@ -75,7 +76,6 @@ class CreateQueue:
                 pass
 
     #removes the top song from the queue and deletes it from the queue listbox
-
     def dequeue(self):
         if (self.head == -1):
             print("The circular queue is empty\n")

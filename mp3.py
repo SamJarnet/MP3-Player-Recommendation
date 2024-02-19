@@ -293,8 +293,6 @@ class MP3Player:
             if self.playlist.get(self.playlist.curselection()[0]) != self.create_queue.queue[self.create_queue.tail] :
                 self.create_queue.enqueue()
         selected = self.create_queue.queue[self.create_queue.tail]
-        
-
         if self.skip_forward_used:
             selected = self.create_queue.dequeue()
             self.skip_forward_used = False
@@ -319,6 +317,7 @@ class MP3Player:
         self.play_button.config(image=pause_image, command=self.pause)
         self.play_button.image = pause_image
         self.calculate_time.check_play_time()
+
 
 
 

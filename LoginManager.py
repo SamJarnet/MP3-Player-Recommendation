@@ -22,7 +22,7 @@ class LoginManager:
                         password TEXT NOT NULL)''')
                 
                 #creates all the features of the login frame
-                self.frame1 = customtkinter.CTkFrame(self.mp3_player.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=10, border_color="black")
+                self.frame1 = customtkinter.CTkFrame(self.mp3_player.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=5, border_color="black")
                 self.frame1.place(x=280,y=100)
                 
                 signup_label = customtkinter.CTkLabel(self.frame1, text="Sign up", width=10, height=2)
@@ -102,7 +102,7 @@ class LoginManager:
         def login(self):
             #loads login frame with login features
             self.frame1.destroy()
-            self.frame2 = customtkinter.CTkFrame(self.mp3_player.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=10, border_color="black")
+            self.frame2 = customtkinter.CTkFrame(self.mp3_player.master, bg_color="lightgrey",fg_color="darkgrey", width=720, height=480, border_width=5, border_color="black")
             self.frame2.place(x=280,y=100)
 
             login_label2 = customtkinter.CTkLabel(self.frame2, text="Log in")

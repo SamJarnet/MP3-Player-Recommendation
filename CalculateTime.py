@@ -28,7 +28,7 @@ class CalculateTime:
                 song = song[0:-1]
             try:
 
-                audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
+                audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
                 num+=audio.length
             except:
                 pass
@@ -66,9 +66,9 @@ class CalculateTime:
         self.mp3_player.statistics.insert(0, self.mp3_player.playlist_folder.get(self.selected_playlist) + " is " 
                                           + str(hours) + " hours, " + str(minutes) + " minutes and " + str(seconds) + " seconds long")
         if self.mp3_player.freeze == False:
-            self.mp3_player.statistics.insert(1, str(mins) + " minutes " + str(secs)  )
+            self.mp3_player.statistics.insert(1, "Total of: " + str(mins) + " minutes " + str(secs) + " seconds listened")
         else:
-            self.mp3_player.statistics.insert(1, str(self.saved_mins) + " minutes " + str(self.saved_secs))
+            self.mp3_player.statistics.insert(1, "Total of: " + str(self.saved_mins) + " minutes " + str(self.saved_secs) + " seconds listened")
         self.mp3_player.statistics.delete(2, "end")
 
     def check_play_time(self):
