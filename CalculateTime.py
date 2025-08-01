@@ -28,7 +28,7 @@ class CalculateTime:
                 song = song[0:-1]
             try:
 
-                audio = (MP3("C:\\Users\\hamue\\Desktop\\Python\\Coding-Project\\Music\\"+song)).info
+                audio = (MP3("C:\\Users\\hamue\\Desktop\\New folder\\Coding-Project\\Music\\"+song)).info
                 num+=audio.length
             except:
                 pass

@@ -58,6 +58,8 @@ class CreateQueue:
             self.tail = 0
             if self.mp3_player.skip_backward_used == False:
                 self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
+            elif len(self.mp3_player.recommended.curselection()) > 0:
+                self.queue[self.tail] = self.mp3_player.recommended.get(self.mp3_player.recommended.curselection()[0])
             else:
                 self.queue[self.tail] = self.mp3_player.last_removed.pop()
             try:
@@ -68,6 +70,8 @@ class CreateQueue:
             self.tail = (self.tail + 1) % self.queue_length
             if self.mp3_player.skip_backward_used == False:
                 self.queue[self.tail] = self.playlist.get(self.playlist.curselection()[0])
+            elif len(self.mp3_player.recommended.curselection()) > 0:
+                self.queue[self.tail] = self.mp3_player.recommended.get(self.mp3_player.recommended.curselection()[0])
             else:
                 self.queue[self.tail] = self.mp3_player.last_removed.pop()
             try:
