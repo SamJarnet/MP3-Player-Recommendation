@@ -1,7 +1,6 @@
 import os
 import pygame
 
-
 from tkinter import Tk, Button, Label, Scale, Listbox, PhotoImage, Text
 from tkinter import filedialog
 
@@ -15,18 +14,18 @@ import pandas as pd
 
 class MP3Player:
     def __init__(self, master):
-
-        # initialise the window with its name and geometry
+        # Set up main window
         self.master = master
         self.master.title("MP3 Player")
         self.master.geometry("1280x720")
 
+        # Initialize helper classes
         self.login_manager = LoginManager.LoginManager(self)
         self.search_window = SearchWindow.SearchWindow(self)
         self.calculate_time = CalculateTime.CalculateTime(self)
         self.create_queue = CreateQueue.CreateQueue(self)
 
-        # creates and positions all of the buttons, listboxes, text boxes and labels for the main window's user interface
+        # Create buttons and UI elements
         self.create_playlist_button = Button(
             self.master, text="Create Playlist", command=self.create_playlist)
         self.create_playlist_button.place(x=60, y=65)
@@ -60,11 +59,11 @@ class MP3Player:
         self.recommended.place(x=900, y=260)
 
         self.generate_button = Button(
-            self.master, text="Generate Songs", command=print("WIP"))
+            self.master, text="Generate Songs", command=self.recommend_songs)
         self.generate_button.place(x=1140, y=225)
 
         self.add_song_button = Button(
-            self.master, text="Add song", command=print("WIP"))
+            self.master, text="Add song", command=self.add_song)
         self.add_song_button.place(x=1060, y=225)
 
         self.load_button = Button(
@@ -83,6 +82,7 @@ class MP3Player:
             self.master, text="Currently playing: nothing")
         self.currently_playing_song.place(x=150, y=620)
 
+        # Set up play/pause and skip buttons with images
         play_image = PhotoImage(file="assets\\play_button.png")
         self.play_button = Button(
             self.master, image=play_image, command=self.play)
@@ -101,6 +101,7 @@ class MP3Player:
         self.skip_backward_button.image = skip_backwards_image
         self.skip_backward_button.place(x=480, y=620)
 
+        # Volume control slider
         self.volume_label = Label(self.master, text="Volume")
         self.volume_label.place(x=1060, y=590)
 
@@ -124,265 +125,283 @@ class MP3Player:
             self.master, text="Queue", command=self.create_queue.add_queue)
         self.queue_button.place(x=950, y=625)
 
-        # holds the playlists and songs that have been loaded
+        # Lists to store playlists and songs
         self.stored_playlists = []
         self.stored_songs = []
 
-        # holds the number of songs with characteristics and their individual scores.
-        self.song_count = 0
+        # Tracking variables
         self.song_score = []
-
-        # holds the currently selected playlist
         self.selected_playlist = 0
-        self.currently_selected_playlist = ""
-
-        # holds the currently playing song
+        self.currently_selected_playlist = 0
         self.song = ""
 
-        # holds the current state of the pygame mixer
-        self.freeze = True
         self.paused = True
         self.playing = False
-        self.skip_used = False
+        self.freeze = True
 
-        # holds information about skip usage
-        self.skip_forward_used = False
-        self.skip_backward_used = False
-        self.last_removed = []
+        # Load song features dataset
+        self.dataset = pd.read_csv("data/data.csv", low_memory=False)
 
-        # initialises pygame and the pygame mixer
         pygame.init()
         pygame.mixer.init()
 
-    # opens the playlists file and inserts all the playlists into the listbox and into the lists for storing
-
     def initialise_playlists(self, username):
-        txt = []
+        # Load playlist names from file and show in listbox
         self.playlist_folder.delete(0, "end")
-        with open("playlists\\playlists" + username + ".txt", "r") as file:
-            txt = file.readlines()
-        for i in range(0, len(txt)):
-            self.stored_playlists.insert(0, txt[i])
-            self.playlist_folder.insert(0,  txt[i])
-            self.stored_songs.insert(
-                0, (list(self.playlist_folder.get(0, -1))))
-            self.song_score.insert(0, 0)
+        self.stored_playlists.clear()
+        self.stored_songs.clear()
+        self.song_score.clear()
+        self.calculate_time.playlist_length.clear()
 
-            # insert an empty list to ensure that there is the correct number of indices for storing playlist lengths
-            self.calculate_time.playlist_length.insert(0, [])
+        filepath = f"playlists\\playlists{username}.txt"
+        if not os.path.exists(filepath):
+            with open(filepath, "w") as f:
+                pass
 
-    # opens each playlist file and inserts all the songs into the list of stored songs
+        with open(filepath, "r") as file:
+            lines = file.readlines()
+
+        for line in lines:
+            playlist_name = line.strip()
+            if playlist_name:
+                self.stored_playlists.append(playlist_name)
+                self.playlist_folder.insert("end", playlist_name)
+                self.stored_songs.append([])
+                self.song_score.append(0)
+                self.calculate_time.playlist_length.append([])
 
     def initialise_songs(self, path):
-        for i in range(0, len(self.stored_playlists)):
-            if os.path.isfile("playlists\\" + self.stored_playlists[i][:-1] + path + ".txt"):
-                with open("playlists\\" + self.stored_playlists[i][:-1] + path + ".txt", "r") as file:
-                    txt = file.readlines()
-                    for j in range(0, len(txt)):
-                        self.stored_songs[i].append(txt[j])
+        # Load songs for each playlist
+        for i, playlist_name in enumerate(self.stored_playlists):
+            song_file = f"playlists\\{playlist_name}{path}.txt"
+            if os.path.isfile(song_file):
+                with open(song_file, "r") as file:
+                    songs = [line.strip() for line in file if line.strip()]
+                    self.stored_songs[i] = songs
             else:
-                # if the file doesn't exist it is created
-                with open("playlists\\" + self.stored_playlists[i][:-1] + path + ".txt", "w") as file:
-                    file.write("")
-
+                with open(song_file, "w") as file:
+                    pass
             self.calculate_time.time_played.append([0])
             self.calculate_time.time_paused.append([0])
 
-    # removes empty lines from the inputted file
-
     def remove_empty_lines(self, text_file):
+        # Remove empty lines from a file
         with open(text_file, "r") as file:
-            new_arr = []
-            text = file.readlines()
-            for i in range(0, len(text)):
-                if text[i] != "\n":
-                    new_arr.append(text[i])
+            lines = [line for line in file if line.strip()]
         with open(text_file, "w") as file:
-            file.writelines(new_arr)
-
-    # creates a playlist and writes the files for playlists and its songs
+            file.writelines(lines)
 
     def create_playlist(self):
-        name = self.input_text.get(1.0, "end-1c")
+        # Create new playlist and update file
+        name = self.input_text.get(1.0, "end-1c").strip()
+        if not name:
+            return
         self.stored_playlists.insert(0, name)
         self.playlist_folder.insert(0, name)
-        self.stored_songs.insert(0, (list(self.playlist_folder.get(0, -1))))
-        with open("playlists\\playlists" + self.login_manager.user + ".txt", "w") as file:
-            for line in self.stored_playlists:
-                file.write("".join(line) + "\n")
-        with open("playlists\\" + name + self.login_manager.user + ".txt", "w") as file:
-            file.write("")
-        self.calculate_time.playlist_length.insert(0, [])
+        self.stored_songs.insert(0, [])
         self.song_score.insert(0, 0)
+        self.calculate_time.playlist_length.insert(0, [])
 
-    # deletes the selected playlist and sets the selected playlist back to default
+        filepath = f"playlists\\playlists{self.login_manager.user}.txt"
+        with open(filepath, "w") as file:
+            for pl in self.stored_playlists:
+                file.write(pl + "\n")
+
+        with open(f"playlists\\{name}{self.login_manager.user}.txt", "w") as file:
+            pass
 
     def delete_playlist(self):
+        # Remove selected playlist and update file & UI
+        if self.currently_selected_playlist >= len(self.stored_playlists):
+            return
         self.stored_playlists.pop(self.currently_selected_playlist)
         self.stored_songs.pop(self.currently_selected_playlist)
-        with open("playlists\\playlists" + self.login_manager.user+".txt", "w") as file:
-            for line in self.stored_playlists:
-                file.write("".join(line) + "\n")
-        mp3_player.remove_empty_lines(
-            "playlists\\playlists" + self.login_manager.user + ".txt")
+
+        filepath = f"playlists\\playlists{self.login_manager.user}.txt"
+        with open(filepath, "w") as file:
+            for pl in self.stored_playlists:
+                file.write(pl + "\n")
+
+        self.remove_empty_lines(filepath)
         self.playlist_folder.delete(0, "end")
-        for i in range(0, len(self.stored_playlists)):
-            self.playlist_folder.insert(0, self.stored_playlists[i])
+        for pl in self.stored_playlists:
+            self.playlist_folder.insert("end", pl)
         self.playlist.delete(0, "end")
         self.playlist_label.config(text="No playlist selected")
 
-    # deletes the selected song from the playlist
-
     def delete_song(self):
-        print(self.stored_songs)
-        self.stored_songs[self.currently_selected_playlist].pop(len(
-            self.stored_songs[self.currently_selected_playlist]) - self.playlist.curselection()[0] - 1)
-        with open("playlists\\" + self.stored_playlists[self.currently_selected_playlist][0] + self.login_manager.user + ".txt", "w") as file:
-            for line in self.stored_songs[self.currently_selected_playlist]:
-                file.write("".join(line) + "\n")
-        mp3_player.remove_empty_lines(
-            "playlists\\" + self.stored_playlists[self.currently_selected_playlist][0] + self.login_manager.user + ".txt")
-        self.playlist.delete(0, "end")
-        for i in range(0, len(self.stored_songs[self.currently_selected_playlist])):
-            self.playlist.insert(
-                0, self.stored_songs[self.currently_selected_playlist][i])
+        # Delete selected song from current playlist
+        if not self.playlist.curselection():
+            return
+        index = self.playlist.curselection()[0]
+        playlist_songs = self.stored_songs[self.currently_selected_playlist]
+        if index >= len(playlist_songs):
+            return
+        playlist_songs.pop(index)
 
-    # selects the playlist the user clicks on and loads all necessary information
+        filepath = f"playlists\\{self.stored_playlists[self.currently_selected_playlist]}{self.login_manager.user}.txt"
+        with open(filepath, "w") as file:
+            for song in playlist_songs:
+                file.write(song + "\n")
+
+        self.remove_empty_lines(filepath)
+
+        self.playlist.delete(0, "end")
+        for song in playlist_songs:
+            self.playlist.insert("end", song)
 
     def select_playlist(self):
+        # Show songs from selected playlist
         self.selected_playlist = self.currently_selected_playlist
         self.playlist_label.config(
             text=self.playlist_folder.get(self.selected_playlist))
         self.playlist.delete(0, "end")
-        for i in range(0, len(self.stored_songs[self.selected_playlist])):
-            self.playlist.insert(
-                0, self.stored_songs[self.selected_playlist][i])
-
-    # loads the song found in the users file exlporer into the playlist and writes the name of the song to the file
+        for song in self.stored_songs[self.selected_playlist]:
+            self.playlist.insert("end", song)
 
     def load_song(self):
+        # Load song from file dialog into current playlist
         file_path = filedialog.askopenfilename(
             defaultextension=".mp3", filetypes=[("MP3 files", "*.mp3")])
         if file_path:
-            self.playlist.insert(0, os.path.basename(file_path))
-            self.stored_songs[self.selected_playlist].insert(
-                0, os.path.basename(file_path))
+            song_name = os.path.basename(file_path)
+            self.playlist.insert("end", song_name)
+            self.stored_songs[self.selected_playlist].append(song_name)
 
-            with open("playlists\\" + self.stored_playlists[self.selected_playlist][0] + self.login_manager.user + ".txt", "w") as file:
-                for line in self.stored_songs[self.selected_playlist]:
-                    file.write("".join(line) + "\n")
+            filepath = f"playlists\\{self.stored_playlists[self.selected_playlist]}{self.login_manager.user}.txt"
+            with open(filepath, "w") as file:
+                for song in self.stored_songs[self.selected_playlist]:
+                    file.write(song + "\n")
 
-    # loads the recommended song
+    def get_playlist_feature_vectors(self):
+        # Get features for songs in current playlist
+        playlist_songs = [s.strip()
+                          for s in self.stored_songs[self.selected_playlist]]
+        df = self.dataset[self.dataset["name"].isin(playlist_songs)]
+        if df.empty:
+            return np.array([])
+        features = ["valence", "year", "acousticness", "danceability", "duration_ms", "energy",
+                    "explicit", "instrumentalness", "key", "liveness", "loudness", "mode",
+                    "popularity", "speechiness", "tempo"]
+        return df[features].to_numpy()
+
+    def get_average_feature_vector(self):
+        # Average feature vector for playlist songs
+        vectors = self.get_playlist_feature_vectors()
+        if len(vectors) == 0:
+            return None
+        return np.mean(vectors, axis=0)
 
     def recommend_songs(self):
+        # Recommend top 5 similar songs not already in playlist
         self.recommended.delete(0, "end")
-        self.data = pd.read_csv("data\\data_with_totals.csv")
-        self.data = np.array(self.data).T
-        average = self.song_score[self.selected_playlist]/self.song_count
-        temp = []
-        for i in range(0, 170653):
-            temp.append(average - self.data[15][i] + np.random.randint(-2, 2))
+        avg_vector = self.get_average_feature_vector()
+        if avg_vector is None:
+            print("No valid songs found in dataset.")
+            return
 
-        for i in range(0, 5):
-            self.recommended.insert(
-                0, self.search_window.data[15][np.argmax(temp)])
-            temp.pop(np.argmax(temp))
+        playlist_songs = [s.strip()
+                          for s in self.stored_songs[self.selected_playlist]]
+        features = ["valence", "year", "acousticness", "danceability", "duration_ms", "energy",
+                    "explicit", "instrumentalness", "key", "liveness", "loudness", "mode",
+                    "popularity", "speechiness", "tempo"]
 
-    # adds the selected song from the recommended box into the playlist and writes the song to the file
+        candidate_songs = self.dataset[~self.dataset["name"].isin(
+            playlist_songs)].copy()
+        candidate_vectors = candidate_songs[features].to_numpy()
 
-    def add_selected_song(self):
-        self.playlist.insert(0, self.recommended.get(
-            self.recommended.curselection()[0]))
-        self.stored_songs[self.selected_playlist].insert(
-            0, self.recommended.get(self.recommended.curselection()[0]))
+        # Calculate cosine similarity
+        similarities = np.dot(candidate_vectors, avg_vector) / (
+            np.linalg.norm(candidate_vectors, axis=1) * np.linalg.norm(avg_vector))
 
-        with open("playlists\\" + self.stored_playlists[self.selected_playlist][0] + self.login_manager.user + ".txt", "w") as file:
-            for line in self.stored_songs[self.selected_playlist]:
-                file.write("".join(line) + "\n")
+        candidate_songs["similarity"] = similarities
+        top_matches = candidate_songs.sort_values(
+            by="similarity", ascending=False).head(5)
 
-    # loads the song into the pygame music mixer and plays the song, also switches the play icon to a pause icon to indicate playing
+        for _, row in top_matches.iterrows():
+            self.recommended.insert("end", row["name"])
+
+    def add_song(self):
+        # Add selected recommended song to playlist and save
+        if not self.recommended.curselection():
+            return
+        song = self.recommended.get(self.recommended.curselection()[0])
+        self.playlist.insert("end", song)
+        self.stored_songs[self.selected_playlist].append(song)
+
+        filepath = f"playlists\\{self.stored_playlists[self.selected_playlist]}{self.login_manager.user}.txt"
+        with open(filepath, "w") as file:
+            for s in self.stored_songs[self.selected_playlist]:
+                file.write(s + "\n")
+
+        self.remove_empty_lines(filepath)
 
     def play(self):
+        # Play selected song, or resume if paused
         self.playing = True
-        if len(self.playlist.curselection()) > 0:
-            if self.playlist.get(self.playlist.curselection()[0]) != self.create_queue.queue[self.create_queue.tail]:
-                self.create_queue.enqueue()
-        selected = self.create_queue.queue[self.create_queue.tail]
-        if self.skip_forward_used:
-            selected = self.create_queue.dequeue()
-            self.skip_forward_used = False
-
-        elif self.skip_backward_used:
-            self.create_queue.enqueue()
-            self.skip_backward_used = False
-            selected = self.create_queue.queue[self.create_queue.tail]
-
-        if selected[-1] == "\n":
-            selected = selected[0:-1]
-
-        if self.paused == False or self.song != selected:
-            pygame.mixer.music.load(
-                "Music\\"+selected)
-            self.song = selected
+        if len(self.playlist.curselection()) == 0:
+            return
+        selected_song = self.playlist.get(self.playlist.curselection()[0])
+        song_path = "Music\\" + selected_song
+        if self.paused or self.song != selected_song:
+            pygame.mixer.music.load(song_path)
             pygame.mixer.music.play()
-            self.currently_playing_song.config(
-                text="Currently Playing: " + os.path.basename(selected))
-        elif self.paused == True:
+            self.song = selected_song
             self.paused = False
+            self.currently_playing_song.config(
+                text="Currently Playing: " + selected_song)
+        else:
             pygame.mixer.music.unpause()
+
         pause_image = PhotoImage(file="assets\\pause_button.png")
         self.play_button.config(image=pause_image, command=self.pause)
         self.play_button.image = pause_image
         self.calculate_time.check_play_time()
 
-    # pauses the pygame music mixer and switches the icon back to a play button
-
     def pause(self):
+        # Pause the music
         pygame.mixer.music.pause()
         self.paused = True
         self.playing = False
+
         play_image = PhotoImage(file="assets\\play_button.png")
         self.play_button.config(image=play_image, command=self.play)
         self.play_button.image = play_image
-
         self.calculate_time.check_pause_time()
 
-    # skips to the next song in the queue and removes the top item
-
     def skip_forward(self):
+        # Skip to next song
         pygame.mixer.music.stop()
         self.skip_forward_used = True
-        mp3_player.play()
-
-    # goes back one song in the queue and adds back to the top item
+        self.play()
 
     def skip_backward(self):
+        # Skip to previous song
         pygame.mixer.music.stop()
         self.skip_backward_used = True
-        mp3_player.play()
-
-    # sets the volume based on the volume slider
+        self.play()
 
     def set_volume(self, val):
+        # Set volume based on slider
         pygame.mixer.music.set_volume(int(val) / 100)
 
-    # checks which playlist is selected
-
     def check_selected_playlist(self):
+        # Update selected playlist index when user clicks
         if len(self.playlist_folder.curselection()) > 0:
             self.currently_selected_playlist = self.playlist_folder.curselection()[
                 0]
-            mp3_player.select_playlist()
+            self.select_playlist()
 
 
 if __name__ == "__main__":
-    # calls the functions that create the window and starts initialising the features
+    # Start the app
     root = Tk()
     mp3_player = MP3Player(root)
+
     mp3_player.remove_empty_lines("playlists\\playlists.txt")
     mp3_player.initialise_playlists("")
     mp3_player.initialise_songs("")
-    # runs the mainloop of the program and does the required checks every instance
+
     while True:
         mp3_player.check_selected_playlist()
         mp3_player.calculate_time.count_time()
